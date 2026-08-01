@@ -38,8 +38,8 @@ Commands:
 EOF
 }
 
-# Domain + email for Nginx/SSL. Override inline: DOMAIN=x EMAIL=y ./build.sh nginx
-DOMAIN="${DOMAIN:-eva.jacktheboss220.com}"
+# Domain + email for Nginx/SSL. Set inline: DOMAIN=your.domain.com EMAIL=you@mail.com ./build.sh nginx
+DOMAIN="${DOMAIN:-}"
 EMAIL="${EMAIL:-}"
 
 require_env() {
@@ -83,9 +83,10 @@ case "${1:-help}" in
         docker image prune -f && docker builder prune -f ;;
     nginx)
         # Installs Nginx, drops the conf with the right domain, enables it.
+        [ -n "$DOMAIN" ] || { echo "Set DOMAIN: DOMAIN=your.domain.com ./build.sh nginx"; exit 1; }
         command -v nginx >/dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y nginx; }
         sudo cp deploy/nginx/wabot.conf /etc/nginx/sites-available/wabot.conf
-        sudo sed -i "s/eva\.jacktheboss220\.com/${DOMAIN}/g" /etc/nginx/sites-available/wabot.conf
+        sudo sed -i "s/your-domain\.example\.com/${DOMAIN}/g" /etc/nginx/sites-available/wabot.conf
         sudo ln -sf /etc/nginx/sites-available/wabot.conf /etc/nginx/sites-enabled/wabot.conf
         sudo rm -f /etc/nginx/sites-enabled/default
         sudo nginx -t && sudo systemctl reload nginx
