@@ -27,6 +27,8 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 	// Extract search query from quoted message or direct input
 	let searchQuery = evv || extendedMessageOriginal?.quotedMessage?.conversation;
 
+	if (!searchQuery) return sendMessageWTyping(from, { text: "```Enter Word to Search```" }, { quoted: msg });
+
 	// Construct URL for Google Custom Search API
 	const urlToSearch = `${baseURL}?key=${GOOGLE_API_KEY_SEARCH}&cx=${SEARCH_ENGINE_KEY}&q=${encodeURIComponent(
 		searchQuery

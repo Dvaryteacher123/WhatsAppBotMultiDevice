@@ -261,7 +261,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 	const prompt = evv;
 	if (isGroup) {
 		let data = await getGroupData(from);
-		if (data.isChatBotOn == false) {
+		if (!data || data.isChatBotOn == false) {
 			return sendMessageWTyping(
 				from,
 				{ text: `Chat Bot is Off ask the owner to activate it. Use dev` },

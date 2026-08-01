@@ -34,6 +34,9 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 		} else {
 			sendMessageWTyping(from, { text: "No Data Found" }, { quoted: msg });
 		}
+	}).catch((err) => {
+		console.error(err);
+		sendMessageWTyping(from, { text: "No Data Found" }, { quoted: msg });
 	});
 };
 

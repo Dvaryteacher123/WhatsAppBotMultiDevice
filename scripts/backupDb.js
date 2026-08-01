@@ -31,7 +31,7 @@ const runBackup = async () => {
 
         await backupCollection("Members");
         await backupCollection("Groups");
-        await backupCollection("Bot"); // Assuming collection name is 'Bot' based on dbControl.js usage (botDataDb.js)
+        await backupCollection("AuthTable"); // bot config lives here (see db/botData.js)
 
         console.log("🎉 All backups completed successfully!");
     } catch (err) {

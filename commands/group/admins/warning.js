@@ -15,9 +15,10 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 			return sendMessageWTyping(from, { text: "❌ Tag someone! or reply to a message" }, { quoted: msg });
 		}
 
-		let taggedJid =
-			extendedMessageOriginal.participant ||
-			extendedMessageOriginal.mentionedJid[0];
+		let taggedJid = extendedMessageOriginal.participant || extendedMessageOriginal.mentionedJid?.[0];
+		if (!taggedJid) {
+			return sendMessageWTyping(from, { text: "❌ Tag someone! or reply to a message" }, { quoted: msg });
+		}
 		// JID is already in correct format (LID or PN)
 
 		let isGroupAdmin = groupAdmins.includes(taggedJid);

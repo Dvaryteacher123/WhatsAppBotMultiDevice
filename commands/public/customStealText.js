@@ -6,7 +6,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 	const memberData = await getMemberData(senderJid);
 	let customStealText = memberData.customStealText;
 
-	if (customStealText != "" && args.length == 0) {
+	if (customStealText && args.length == 0) {
 		return sendMessageWTyping(from, { text: "*Custom steal Text* :" + customStealText }, { quoted: msg });
 	} else {
 		if (!evv) return sendMessageWTyping(from, { text: "*Provide some text*" }, { quoted: msg });

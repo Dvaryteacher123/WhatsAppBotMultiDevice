@@ -54,6 +54,9 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 				},
 				{ quoted: msg }
 			);
+		}).catch((err) => {
+			console.error(err);
+			sendMessageWTyping(from, { text: "❌ Failed to fetch horoscope. Try again." }, { quoted: msg });
 		});
 	}
 };

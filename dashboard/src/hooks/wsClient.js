@@ -34,8 +34,10 @@ function connect() {
   ws.onmessage = evt => {
     try {
       const data = JSON.parse(evt.data)
-      if (data.type === 'status' && data.status === 'connected') {
-        emit('_status', { status: 'connected' })
+      if (data.type === 'status') {
+        // Server broadcasts both 'connected' and 'disconnected' (bot connection
+        // dropping while the browser<->server socket stays open) — reflect both.
+        emit('_status', { status: data.status === 'connected' ? 'connected' : 'disconnected' })
       }
       emit(data.type, data)
     } catch (_) {}

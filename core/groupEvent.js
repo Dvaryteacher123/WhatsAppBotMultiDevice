@@ -1,4 +1,4 @@
-import sendToTelegram, { escapeHtml } from "../notify/telegram.js";
+import { escapeHtml } from "../notify/telegram.js";
 import notifyOwner from "../notify/owner.js";
 import { fake_quoted } from "../utils/fakeQuoted.js";
 import { getGroupData } from "../db/groupData.js";
@@ -14,16 +14,19 @@ const getGroupEvent = async (sock, events, cache) => {
 	let jid = events.id;
 	let groupDataDB = await getGroupData(jid);
 	cache.del(jid + ":groupMetadata");
+	// Group doc is only created on first text message (see core/messages.js) — a join
+	// event can fire before that ever happens, so bail instead of crashing on null.
+	if (!groupDataDB) return;
 
 	if (events.action == "add") {
 		if (groupDataDB.welcome != "") {
 			for (const member of events.participants) {
-				const phoneNumber = extractPhoneNumber(member);
+				const phoneNumber = getPhone(member);
 				await messageQueue.enqueue(jid, () => sock.sendMessage(
 					jid,
 					{
 						text: "Welcome @" + phoneNumber + "\n\n" + groupDataDB.welcome,
-						mentions: [member],
+						mentions: [member.id],
 					},
 					{ quoted: fake_quoted(events, "Welcome to " + groupDataDB.grpName) }
 				), 1);
@@ -32,8 +35,8 @@ const getGroupEvent = async (sock, events, cache) => {
 		//91Only Working
 		if (groupDataDB.is91Only == true) {
 			let filteredParticipants = events.participants.filter((p) => {
-				const phoneNumber = extractPhoneNumber(p.phoneNumber);
-				return !phoneNumber.startsWith("91");
+				const phoneNumber = getPhone(p);
+				return phoneNumber && !phoneNumber.startsWith("91");
 			});
 			if (filteredParticipants.length > 0) {
 				sock.groupParticipantsUpdate(jid, filteredParticipants, "remove");

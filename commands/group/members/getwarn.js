@@ -20,7 +20,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 	}
 	const groupData = await getGroupData(from);
 	let warnCount;
-	if (groupData) {
+	if (groupData && groupData !== -1 && Array.isArray(groupData.memberWarnCount)) {
 		groupData.memberWarnCount.forEach((element, index) => {
 			if (element.member == taggedJid) {
 				warnCount = element.count;

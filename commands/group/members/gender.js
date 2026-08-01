@@ -3,6 +3,7 @@ import axios from "axios";
 const getGender = async (name) => {
 	let url = "https://api.genderize.io/?name=" + name;
 	let { data } = await axios.get(url);
+	if (!data.gender) return Promise.reject("Name Not Found!!!");
 	const genderEmoji = data.gender === "male" ? "👦" : "👧";
 	let genderText = `${genderEmoji} *${data.name}* is likely *${data.gender}*\n📊 Probability: *${Math.round(data.probability * 100)}%*`;
 	return new Promise((resolve, reject) => {

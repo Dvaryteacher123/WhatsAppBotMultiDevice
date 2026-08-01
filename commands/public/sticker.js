@@ -50,8 +50,9 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 	// 	member.updateOne({ _id: senderJid }, { $inc: { dmLimit: -1 } });
 	// }
 
-	let packName = memberData ? await memberData?.customStealText : "eva";
-	let authorName = memberData?.customStealText ? undefined : "jacktheboss220";
+	const savedStealText = memberData && memberData !== -1 ? memberData.customStealText : null;
+	let packName = savedStealText || "eva";
+	let authorName = savedStealText ? undefined : "jacktheboss220";
 
 	const isPackIncluded = args.includes("pack");
 	const isAuthorIncluded = args.includes("author");

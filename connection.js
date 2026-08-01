@@ -27,9 +27,13 @@ const startSock = async (reason = "initial") => {
 	try {
 		const now = Date.now();
 
-		// Prevent too frequent reconnection attempts
+		// Prevent too frequent reconnection attempts — reschedule instead of dropping,
+		// else a fast double-close (e.g. stream error right after a prior reconnect)
+		// silently kills reconnection forever.
 		if (now - lastConnectionTime < MIN_CONNECTION_INTERVAL) {
-			console.log("⏳ Connection attempt too soon, waiting...");
+			const wait = MIN_CONNECTION_INTERVAL - (now - lastConnectionTime);
+			console.log(`⏳ Connection attempt too soon, retrying in ${wait}ms...`);
+			setTimeout(() => startSock(reason), wait);
 			return null;
 		}
 

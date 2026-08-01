@@ -1,4 +1,3 @@
-import sendToTelegram from "./telegram.js";
 import { getSock } from "../core/socketRef.js";
 
 const ownerJid = process.env.MY_NUMBER?.split(",")[0] + "@s.whatsapp.net";
@@ -18,8 +17,6 @@ function htmlToWa(html) {
 }
 
 const notifyOwner = (sock, mess, msg) => {
-	sendToTelegram(mess);
-
 	const activeSock = sock?.user ? sock : getSock();
 	if (!activeSock?.user || !ownerJid) return;
 

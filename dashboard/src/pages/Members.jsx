@@ -174,13 +174,15 @@ export default function Members() {
   const [search,         setSearch]         = useState('')
   const [selectedMember, setSelectedMember] = useState(null)
   const debounce = useRef(null)
+  const reqId = useRef(0)
 
   function load(p = page, s = sort, o = order, q = search) {
+    const id = ++reqId.current
     setLoading(true)
     getMembers({ page: p, limit: LIMIT, sort: s, order: o, search: q })
-      .then(setData)
-      .catch(() => toast('Failed to load members', false))
-      .finally(() => setLoading(false))
+      .then(d => { if (id === reqId.current) setData(d) })
+      .catch(() => { if (id === reqId.current) toast('Failed to load members', false) })
+      .finally(() => { if (id === reqId.current) setLoading(false) })
   }
 
   useEffect(() => { load() }, [])

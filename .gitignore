@@ -4,7 +4,6 @@ dashboard/node_modules
 
 # React build output — Koyeb builds this itself via Dockerfile
 public/app/
-.pnpm-store/
 backups
 # package-lock.json
 .github/instructions/

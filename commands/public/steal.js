@@ -40,8 +40,8 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 	if (type === "extendedTextMessage" && content.includes("stickerMessage")) {
 		let packName = "eva";
 		let authorName = "jacktheboss220";
-		if (args.includes("pack")) packName = args.join(" ").split("pack ")[1].split("author")[0];
-		if (args.includes("author")) authorName = args.join(" ").split("author ")[1].split("pack")[0];
+		if (args.includes("pack")) packName = args.join(" ").split("pack ")[1]?.split("author")[0] || packName;
+		if (args.includes("author")) authorName = args.join(" ").split("author ")[1]?.split("pack")[0] || authorName;
 
 		const downloadFilePath = extendedMessageOriginal?.quotedMessage?.stickerMessage;
 		const stream = await downloadContentFromMessage(downloadFilePath, "sticker");

@@ -4,7 +4,7 @@ import { extractPhoneNumber } from "../../../utils/lid.js";
 
 const handler = async (sock, msg, from, args, msgInfoObj) => {
 	const { prefix, sendMessageWTyping, groupMetadata, type, content, extendedMessageOriginal } = msgInfoObj;
-	if (extendedMessageOriginal) {
+	if (extendedMessageOriginal?.quotedMessage) {
 		let temp =
 			extendedMessageOriginal?.quotedMessage?.extendedTextMessage?.text ||
 			extendedMessageOriginal?.quotedMessage?.conversation ||

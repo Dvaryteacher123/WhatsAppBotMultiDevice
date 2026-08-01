@@ -24,8 +24,8 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 	await axiox("https://redditsave.com/info?url=" + args[0])
 		.then((res) => {
 			const dom = new JSDOM(res.data);
-			const down = dom.window.document.getElementsByClassName("downloadbutton")[0].getAttribute("href");
 			try {
+				const down = dom.window.document.getElementsByClassName("downloadbutton")[0]?.getAttribute("href");
 				if (down.endsWith("png") || down.endsWith("jpg") || down.endsWith("jpeg")) {
 					sendMessageWTyping(
 						from,

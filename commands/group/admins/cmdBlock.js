@@ -5,7 +5,8 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 	if (!isGroup) return sendMessageWTyping(from, { text: "Use In Group Only!" }, { quoted: msg });
 
 	const resBlock = await getGroupData(from);
-	if (resBlock == -1) return sendMessageWTyping("No data found in DB for this group", { quoted: msg });
+	if (!resBlock || resBlock === -1)
+		return sendMessageWTyping(from, { text: "No data found in DB for this group" }, { quoted: msg });
 	let blockCommandsInDB = resBlock.cmdBlocked;
 
 	switch (command) {

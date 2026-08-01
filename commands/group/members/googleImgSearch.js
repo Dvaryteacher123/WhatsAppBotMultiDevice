@@ -28,7 +28,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 
 	const data = await getGroupData(from);
 
-	if (!data.isImgOn) {
+	if (!data?.isImgOn) {
 		return sendMessageWTyping(
 			from,
 			{ text: "```By Default Search Image is Disable in this group.```" },

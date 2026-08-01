@@ -79,25 +79,6 @@ class MemoryManager {
 		return stream;
 	}
 
-	async streamCopy(source, destination) {
-		return new Promise((resolve, reject) => {
-			const readStream = this.createOptimizedReadStream(source);
-			const writeStream = this.createOptimizedWriteStream(destination);
-			readStream.pipe(writeStream);
-			writeStream.on("finish", resolve);
-			writeStream.on("error", reject);
-			readStream.on("error", reject);
-		});
-	}
-
-	processBufferInChunks(buffer, chunkSize = 64 * 1024) {
-		const chunks = [];
-		for (let i = 0; i < buffer.length; i += chunkSize) {
-			chunks.push(buffer.slice(i, i + chunkSize));
-		}
-		return chunks;
-	}
-
 	generateTempFileName(ext) {
 		const filename = `temp_${Date.now()}_${Math.floor(Math.random() * 10000)}${ext}`;
 		const tempDir = path.join(__dirname, "..", "temp");

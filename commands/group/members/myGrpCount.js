@@ -6,7 +6,7 @@ const readMore = more.repeat(4001);
 const handler = async (sock, msg, from, args, msgInfoObj) => {
 	const { sendMessageWTyping, senderJid, extendedMessageOriginal } = msgInfoObj;
 
-	taggedJid = extendedMessageOriginal?.participant;
+	const taggedJid = extendedMessageOriginal?.participant;
 	const filter = {
 		"members.id": taggedJid || senderJid,
 	};
@@ -14,7 +14,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 		.find(filter)
 		.toArray()
 		.then((res) => {
-			if (res) {
+			if (res.length) {
 				let mess = "",
 					userName = "",
 					totalMessageCount = 0;
@@ -44,6 +44,10 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 			} else {
 				sendMessageWTyping(from, { text: "No Data Found" }, { quoted: msg });
 			}
+		})
+		.catch((err) => {
+			console.error(err);
+			sendMessageWTyping(from, { text: "No Data Found" }, { quoted: msg });
 		});
 };
 

@@ -9,7 +9,7 @@ const logger = P({ level: "silent" });
 const messageCache = new NodeCache({
 	stdTTL: 120, // Reduced to 2 minutes
 	checkperiod: 30,
-	maxKeys: 100, // Reduced from 200
+	maxKeys: 180,
 	useClones: false,
 });
 
@@ -87,7 +87,7 @@ const socket = async () => {
 			for (const msg of m.messages) {
 				if (msg.message) {
 					const cacheKey = `${msg.key.remoteJid}:${msg.key.id}`;
-					// Only cache if under limit to prevent memory overflow
+					// Only cache if under limit to prevent memory overflow (must stay < maxKeys or .set() throws ECACHEFULL)
 					if (messageCache.getStats().keys < 180) {
 						messageCache.set(cacheKey, msg.message);
 					}
@@ -108,11 +108,15 @@ const socket = async () => {
 		}
 	});
 
-	// Clear interval and cleanup on socket close
+	// Clear interval and cleanup on socket close — only clear the module-level
+	// ref if it's still ours, else a late close event from a stale socket would
+	// wipe out the flush timer/buffer of the socket that already replaced it.
 	sock.ws.on("close", () => {
-		if (authStateCleanup) {
+		if (authStateCleanup === cleanup) {
 			authStateCleanup();
 			authStateCleanup = null;
+		} else {
+			cleanup();
 		}
 		messageCache.flushAll();
 		console.log("🧹 Socket cleanup completed");

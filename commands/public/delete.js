@@ -50,8 +50,8 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 			options.fromMe = true;
 		}
 
-		// Send the delete message request
-		await sock.sendMessage(from, { delete: options });
+		// Send the delete message request (via queue, not a direct sock call)
+		await sendMessageWTyping(from, { delete: options });
 	} catch (err) {
 		console.error("Error deleting message:", err);
 		sendMessageWTyping(from, { text: `❌ Error deleting message: ${err.toString()}` }, { quoted: msg });

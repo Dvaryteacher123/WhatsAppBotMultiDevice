@@ -12,23 +12,25 @@ const getRandom = (ext) => memoryManager.generateTempFileName(ext);
 // the server). Otherwise fall back to the binary bundled with youtube-dl-exec.
 const youtubedl = process.env.YTDLP_PATH ? create(process.env.YTDLP_PATH) : defaultYoutubedl;
 
-// Optional cookies file (Netscape cookies.txt) for server-side age/bot bypass.
-// Set YTDLP_COOKIES=/path/to/cookies.txt in .env to fix "Sign in to confirm" on server.
-const COOKIES = process.env.YTDLP_COOKIES;
+import { getCookiePath } from "../../../functions/cookieManager.js";
 
-// Single, simple yt-dlp option set. No agent swapping, no ytdl-core fallback.
-const ytdlpOpts = (extra = {}) => {
+const ytdlpOpts = async (extra = {}) => {
 	const opts = {
 		noCheckCertificates: true,
 		noWarnings: true,
 		noPlaylist: true,
 		forceIpv4: true,
 		ffmpegLocation: ffmpeg,
-		// tv + web clients bypass most age gates without login
-		extractorArgs: "youtube:player_client=tv,web_safari,mweb",
+		// tv + android_vr work without a PO token (server-side, no browser). web is
+		// kept last as a cookie-backed extra. android/ios are dead on modern YouTube.
+		extractorArgs: "youtube:player_client=tv,android_vr,web",
+		// yt-dlp now requires an EJS runtime to solve YouTube JS challenges (2026+).
+		// Node.js is available in the container, so use it.
+		jsRuntimes: "node",
 		...extra,
 	};
-	if (COOKIES) opts.cookies = COOKIES;
+	const cookiePath = await getCookiePath();
+	if (cookiePath) opts.cookies = cookiePath;
 	return opts;
 };
 
@@ -60,6 +62,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 	}
 
 	const fileDown = getRandom(".mp4");
+	let fileDown_final = fileDown;
 
 	try {
 		await sendMessageWTyping(from, { text: `⏳ Processing video... Please wait.` }, { quoted: msg });
@@ -68,7 +71,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 		let title = "Unknown Video";
 		let duration = 0;
 		try {
-			const info = await youtubedl(URL, ytdlpOpts({ dumpSingleJson: true }));
+			const info = await youtubedl(URL, await ytdlpOpts({ dumpSingleJson: true }));
 			title = info.title || "Unknown Video";
 			duration = info.duration || 0;
 		} catch (infoError) {
@@ -85,30 +88,42 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 
 		console.log("Downloading:", title, URL);
 
-		// Download + merge in one yt-dlp call (yt-dlp uses ffmpeg-static to merge)
-		await youtubedl(
+		// Prefer a pre-muxed mp4 (no ffmpeg merge needed) → avoids merge failures on servers.
+		// Falls back to merged streams only when no single-stream mp4 exists.
+		const result = await youtubedl(
 			URL,
-			ytdlpOpts({
-				format: "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best",
+			await ytdlpOpts({
+				format: "best[height<=720][ext=mp4]/bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720]/best",
 				mergeOutputFormat: "mp4",
 				output: fileDown,
 			})
 		);
+		console.log("yt-dlp result:", JSON.stringify(result)?.slice(0, 300));
 
+		// yt-dlp may write a different extension; check the exact path and nearby variants
+		let actualFile = fileDown;
 		if (!fs.existsSync(fileDown)) {
+			const base = fileDown.replace(/\.[^.]+$/, "");
+			const variants = [".mp4", ".mkv", ".webm"].map((e) => base + e);
+			actualFile = variants.find((f) => fs.existsSync(f)) || fileDown;
+		}
+
+		if (!fs.existsSync(actualFile)) {
+			console.error("File not found after download. Expected:", fileDown);
 			return sendMessageWTyping(from, { text: "❌ Video file was not created." }, { quoted: msg });
 		}
-		const stats = await fs.promises.stat(fileDown);
+		fileDown_final = actualFile;
+		const stats = await fs.promises.stat(fileDown_final);
 		if (stats.size === 0) {
 			return sendMessageWTyping(from, { text: "❌ Video file is empty." }, { quoted: msg });
 		}
-		if (!isValidVideoFile(fileDown)) {
+		if (!isValidVideoFile(fileDown_final)) {
 			return sendMessageWTyping(from, { text: "❌ Video file is not valid or not supported." }, { quoted: msg });
 		}
 
 		const fileSizeMB = stats.size / (1024 * 1024);
 		if (fileSizeMB > 60) {
-			memoryManager.safeUnlink(fileDown);
+			memoryManager.safeUnlink(fileDown_final);
 			return sendMessageWTyping(
 				from,
 				{ text: `❌ Video is too large to send on WhatsApp (${fileSizeMB.toFixed(2)}MB). Limit is 60MB.` },
@@ -116,29 +131,18 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 			);
 		}
 
-		const normalizedFileDown = fileDown.split(path.sep).join("/");
-		try {
-			await sendMessageWTyping(
-				from,
-				{
-					video: normalizedFileDown,
-					caption: `🎥 *${title}*\n📊 Size: ${fileSizeMB.toFixed(2)}MB`,
-					mimetype: "video/mp4",
-				},
-				{ quoted: msg }
-			);
-		} catch (sendPathError) {
-			const videoBuffer = await readFileEfficiently(fileDown);
-			await sendMessageWTyping(
-				from,
-				{
-					video: videoBuffer,
-					caption: `🎥 *${title}*\n📊 Size: ${fileSizeMB.toFixed(2)}MB`,
-					mimetype: "video/mp4",
-				},
-				{ quoted: msg }
-			);
-		}
+		// Read into buffer before enqueuing — BullMQ processes jobs async, file would be
+		// deleted by the finally block before the job runs if we pass a path.
+		const videoBuffer = await readFileEfficiently(fileDown_final);
+		await sendMessageWTyping(
+			from,
+			{
+				video: videoBuffer,
+				caption: `🎥 *${title}*\n📊 Size: ${fileSizeMB.toFixed(2)}MB`,
+				mimetype: "video/mp4",
+			},
+			{ quoted: msg }
+		);
 	} catch (err) {
 		console.error("YTDL Handler Error:", err);
 		const m = (err.message || "").toLowerCase();
@@ -154,7 +158,8 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 		}
 		sendMessageWTyping(from, { text: errorMsg }, { quoted: msg });
 	} finally {
-		memoryManager.safeUnlink(fileDown);
+		memoryManager.safeUnlink(fileDown_final);
+		if (fileDown_final !== fileDown) memoryManager.safeUnlink(fileDown);
 	}
 };
 

@@ -6,6 +6,7 @@ const readMore = more.repeat(4001);
 const handler = async (sock, msg, from, args, msgInfoObj) => {
 	const { sendMessageWTyping } = msgInfoObj;
 	group.findOne({ _id: from }).then((res) => {
+		if (!res) return sendMessageWTyping(from, { text: "❌ No data found in DB for this group." }, { quoted: msg });
 		group
 			.aggregate([
 				{ $match: { _id: from } },
@@ -15,7 +16,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 			])
 			.toArray()
 			.then((r) => {
-				const items = r[0].items;
+				const items = r[0]?.items || [];
 				const totalText = items.reduce((s, m) => s + (m.texttotal || 0), 0);
 				const totalImage = items.reduce((s, m) => s + (m.imagetotal || 0), 0);
 				const totalVideo = items.reduce((s, m) => s + (m.videototal || 0), 0);

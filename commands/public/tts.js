@@ -12,6 +12,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 	}
 
 	let message = evv || extendedMessageOriginal?.quotedMessage?.conversation;
+	if (!message) return sendMessageWTyping(from, { text: `❌ *Enter some text*` }, { quoted: msg });
 	message = message.split(":").join("\n");
 
 	const canvas = createCanvas(512, 512);
@@ -30,6 +31,11 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 	const out = fs.createWriteStream(`./${filename}`);
 	const stream = canvas.createPNGStream();
 	stream.pipe(out);
+
+	out.on("error", (err) => {
+		console.error("[TTS ERR] write stream:", err.message);
+		sendMessageWTyping(from, { text: `❌ *Failed to create sticker*` }, { quoted: msg });
+	});
 
 	out.on("finish", async () => {
 		const sticker = new Sticker(`./${filename}`, {

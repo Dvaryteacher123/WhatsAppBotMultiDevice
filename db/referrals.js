@@ -16,16 +16,7 @@ const createReferral = async (companyName, userJid, userName) => {
 	try {
 		const lowerName = companyName.toLowerCase();
 
-		const allReferrals = await referrals.find({}).toArray();
-		let userFoundIn = null;
-
-		for (const company of allReferrals) {
-			const userIndex = company.users.findIndex((u) => u.jid === userJid);
-			if (userIndex !== -1) {
-				userFoundIn = company;
-				break;
-			}
-		}
+		const userFoundIn = await referrals.findOne({ "users.jid": userJid });
 
 		if (userFoundIn) {
 			if (userFoundIn._id === lowerName) {
@@ -131,18 +122,8 @@ const searchReferrals = async (searchTerm) => {
 
 const updateUserRef = async (userJid, newCompanyName) => {
 	try {
-		const allReferrals = await referrals.find({}).toArray();
-		let userFound = null;
-		let oldCompany = null;
-
-		for (const company of allReferrals) {
-			const userIndex = company.users.findIndex((u) => u.jid === userJid);
-			if (userIndex !== -1) {
-				userFound = company.users[userIndex];
-				oldCompany = company;
-				break;
-			}
-		}
+		const oldCompany = await referrals.findOne({ "users.jid": userJid });
+		const userFound = oldCompany?.users.find((u) => u.jid === userJid);
 
 		if (!userFound) return { success: false, reason: "user_not_found" };
 

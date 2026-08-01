@@ -6,13 +6,11 @@ import notifyOwner from "../notify/owner.js";
 import { escapeHtml } from "../notify/telegram.js";
 import { readFileEfficiently } from "../utils/file.js";
 import { getGroupMeta, setGroupMeta, checkRateLimit } from "../cache/redisCache.js";
-import { bullEnqueue, isBullReady } from "../queue/bullQueue.js";
 
 const prefix = process.env.PREFIX;
 const moderatos = [...process.env.MODERATORS?.split(",")];
 import getGroupAdmins from "../utils/groupAdmins.js";
 import { extractPhoneNumber, getPNFromLID } from "../utils/lid.js";
-import { stickerForward, forwardGroup } from "../utils/stickerForward.js";
 import { createMembersData, getMemberData, member } from "../db/members.js";
 import { createGroupData, getGroupData, group } from "../db/groupData.js";
 import {
@@ -80,19 +78,6 @@ const getCommand = async (sock, msg, cache) => {
 				const messageType = Object.keys(msgObj)[0];
 				const isGroupChat = to.endsWith("@g.us");
 
-				if (isGroupChat && isBullReady()) {
-					// Groups → BullMQ (Redis-backed, survives restarts, concurrency 5)
-					const priority = mediaTypes.includes(messageType) ? 2 : 1;
-					try {
-						await bullEnqueue(to, msgObj, messageOptions, true, priority);
-						return;
-					} catch (bullErr) {
-						console.error("[BullMQ enqueue failed, falling back to in-memory]", bullErr.message);
-						// fall through to in-memory queue below
-					}
-				}
-
-				// DMs or BullMQ unavailable → in-memory queue (original path)
 				if (mediaTypes.includes(messageType)) {
 					if (typeof msgObj[messageType] === "string") {
 						try {
@@ -148,10 +133,6 @@ const getCommand = async (sock, msg, cache) => {
 		const from = msg.key.remoteJid;
 		const content = JSON.stringify(msg.message);
 		const type = messageKeys.find((k) => _contentTypes.has(k)) ?? messageKeys[0];
-
-		if (type === "stickerMessage" && forwardGroup != "") {
-			stickerForward(sock, msg, from);
-		}
 
 		const m = msg.message || {};
 

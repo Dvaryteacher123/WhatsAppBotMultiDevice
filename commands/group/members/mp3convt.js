@@ -33,8 +33,8 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 			.outputOptions(["-preset ultrafast"])
 			.on("end", async () => {
 				console.log("Conversion finished");
-				await sock
-					.sendMessage(
+				try {
+					await sendMessageWTyping(
 						from,
 						{
 							audio: await fs.promises.readFile(path),
@@ -42,17 +42,20 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 							fileName: path,
 						},
 						{ quoted: msg }
-					)
-					.then(() => {
-						try {
-							fs.unlinkSync(media);
-							fs.unlinkSync(path);
-						} catch {}
-					});
+					);
+				} finally {
+					try {
+						fs.unlinkSync(media);
+						fs.unlinkSync(path);
+					} catch {}
+				}
 			})
 			.on("error", (err) => {
 				console.error("Error:", err);
 				sendMessageWTyping(from, { text: `Error while converting` }, { quoted: msg });
+				try {
+					fs.unlinkSync(media);
+				} catch {}
 			})
 			.save(path);
 	} else {

@@ -35,11 +35,13 @@ function ChatHistoryModal({ grp, onClose }) {
   const bottomRef             = useRef()
 
   useEffect(() => {
+    let cancelled = false
     setLoading(true)
     setError(null)
     getGroupChatHistory(grp._id, hours)
-      .then(data => { setLogs(data); setLoading(false) })
-      .catch(e  => { setError(e.message); setLoading(false) })
+      .then(data => { if (!cancelled) { setLogs(data); setLoading(false) } })
+      .catch(e  => { if (!cancelled) { setError(e.message); setLoading(false) } })
+    return () => { cancelled = true }
   }, [grp._id, hours])
 
   useEffect(() => {

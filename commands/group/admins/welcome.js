@@ -4,7 +4,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 	const { sendMessageWTyping } = msgInfoObj;
 	const evv = msgInfoObj.evv;
 	const groupData = await getGroupData(from);
-	let welMess = groupData.welcome;
+	let welMess = groupData?.welcome;
 
 	if (args[0] == "reset") {
 		await group.updateOne({ _id: from }, { $set: { welcome: "" } });

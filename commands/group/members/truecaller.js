@@ -37,10 +37,11 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 	const response = await truecallerjs.search(searchData);
 	if (!response) return sendMessageWTyping(from, { text: `❌ Number not found` }, { quoted: msg });
 	const data = response.json().data[0];
+	if (!data?.phones?.[0]) return sendMessageWTyping(from, { text: `❌ Number not found` }, { quoted: msg });
 
 	const name = response.getName();
-	const { e164Format, numberType, countryCode, carrier, type } = data?.phones[0];
-	const { city } = response.getAddresses()[0];
+	const { e164Format, numberType, countryCode, carrier, type } = data.phones[0];
+	const { city } = response.getAddresses()[0] || {};
 	const email = response.getEmailId();
 
 	const message = `🔍 *Truecaller Result*\n\n👤 *Name:* ${name}\n📱 *Number:* ${e164Format}\n🏙️ *City:* ${city || "N/A"}\n🌍 *Country:* ${countryCode}\n📡 *Carrier:* ${carrier} _(${numberType})_\n📧 *Email:* ${email || "N/A"}`;

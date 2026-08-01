@@ -14,6 +14,7 @@ const NAV = [
   { to: '/broadcast', icon: '📢', label: 'Broadcast' },
   { to: '/logs',      icon: '📋', label: 'Logs' },
   { to: '/health',    icon: '💚', label: 'Bot Health' },
+  { to: '/settings',  icon: '⚙',  label: 'Settings' },
 ]
 
 export default function Layout({ children }) {

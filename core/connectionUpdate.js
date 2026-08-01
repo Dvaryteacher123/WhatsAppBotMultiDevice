@@ -1,5 +1,5 @@
 import { DisconnectReason } from "baileys";
-import sendToTelegram, { escapeHtml } from "../notify/telegram.js";
+import { escapeHtml } from "../notify/telegram.js";
 import notifyOwner from "../notify/owner.js";
 
 const getConnectionUpdate = async (startSock, events) => {

@@ -11,21 +11,25 @@ const getRandom = (ext) => memoryManager.generateTempFileName(ext);
 // the server). Otherwise fall back to the binary bundled with youtube-dl-exec.
 const youtubedl = process.env.YTDLP_PATH ? create(process.env.YTDLP_PATH) : defaultYoutubedl;
 
-// Optional cookies file (Netscape cookies.txt) for server-side age/bot bypass.
-// Set YTDLP_COOKIES=/path/to/cookies.txt in .env to fix "Sign in to confirm" on server.
-const COOKIES = process.env.YTDLP_COOKIES;
+import { getCookiePath } from "../../../functions/cookieManager.js";
 
-const ytdlpOpts = (extra = {}) => {
+const ytdlpOpts = async (extra = {}) => {
 	const opts = {
 		noCheckCertificates: true,
 		noWarnings: true,
 		noPlaylist: true,
 		forceIpv4: true,
 		ffmpegLocation: ffmpeg,
-		extractorArgs: "youtube:player_client=tv,web_safari,mweb",
+		// tv + android_vr work without a PO token (server-side, no browser). web is
+		// kept last as a cookie-backed extra. android/ios are dead on modern YouTube.
+		extractorArgs: "youtube:player_client=tv,android_vr,web",
+		// yt-dlp now requires an EJS runtime to solve YouTube JS challenges (2026+).
+		// Node.js is available in the container, so use it.
+		jsRuntimes: "node",
 		...extra,
 	};
-	if (COOKIES) opts.cookies = COOKIES;
+	const cookiePath = await getCookiePath();
+	if (cookiePath) opts.cookies = cookiePath;
 	return opts;
 };
 
@@ -60,7 +64,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 
 		// Title (best-effort)
 		try {
-			const info = await youtubedl(URL, ytdlpOpts({ dumpSingleJson: true }));
+			const info = await youtubedl(URL, await ytdlpOpts({ dumpSingleJson: true }));
 			title = info.title || "Unknown Song";
 		} catch (e) {
 			console.log("Title fetch failed:", e.message);
@@ -69,8 +73,8 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 		// Download + extract to mp3 (yt-dlp uses ffmpeg-static)
 		await youtubedl(
 			URL,
-			ytdlpOpts({
-				format: "bestaudio[ext=m4a]/bestaudio/best",
+			await ytdlpOpts({
+				format: "bestaudio/best",
 				extractAudio: true,
 				audioFormat: "mp3",
 				audioQuality: 0,

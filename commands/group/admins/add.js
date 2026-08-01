@@ -14,9 +14,10 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 		);
 	}
 
-	let participant = extendedMessageOriginal
-		? extendedMessageOriginal.participant
-		: evv.split(" ").join("");
+	let participant =
+		(extendedMessageOriginal &&
+			(extendedMessageOriginal.participant || extendedMessageOriginal.mentionedJid?.[0])) ||
+		evv.split(" ").join("");
 	if (participant.startsWith("@")) {
 		return sendMessageWTyping(
 			from,

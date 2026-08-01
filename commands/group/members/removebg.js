@@ -15,12 +15,12 @@ const getRandom = (ext) => {
 	return `${Math.floor(Math.random() * 10000)}${ext}`;
 };
 
-const getRemoveBg = async (Path) => {
+const getRemoveBg = async (Path, outputPath) => {
 	const inputPath = `./${Path}`;
 	const formData = new FormData();
 	formData.append("size", "auto");
 	formData.append("image_file", fs.createReadStream(inputPath), path.basename(inputPath));
-	await axios({
+	const response = await axios({
 		method: "post",
 		url: "https://api.remove.bg/v1.0/removebg",
 		data: formData,
@@ -30,15 +30,9 @@ const getRemoveBg = async (Path) => {
 			"X-Api-Key": removebgAPI,
 		},
 		encoding: null,
-	})
-		.then(async (response) => {
-			if (response.status != 200) return console.log("error");
-			await fs.promises.writeFile("./bg.png", response.data);
-			console.log("DONE");
-		})
-		.catch((error) => {
-			return console.log("Error change api key");
-		});
+	});
+	await fs.promises.writeFile(outputPath, response.data);
+	console.log("DONE");
 };
 
 const handler = async (sock, msg, from, args, msgInfoObj) => {
@@ -63,11 +57,12 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 		}
 		const media = getRandom(".jpeg");
 		await writeFile(media, buffer);
+		const outputPath = getRandom(".png");
 		try {
-			await getRemoveBg(media);
+			await getRemoveBg(media, outputPath);
 			try {
 				await sendMessageWTyping(from, {
-					image: await fs.promises.readFile("./bg.png"),
+					image: await fs.promises.readFile(outputPath),
 					mimetype: "image/png",
 					caption: `*Sent by eva*`,
 				}, { quoted: msg });
@@ -75,11 +70,12 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 				sendMessageWTyping(from, { text: err.toString() }, { quoted: msg });
 			} finally {
 				try { fs.unlinkSync(media); } catch {}
-				try { fs.unlinkSync("./bg.png"); } catch {}
+				try { fs.unlinkSync(outputPath); } catch {}
 			}
 		} catch (err) {
 			console.log("Status : ", err.status);
 			sendMessageWTyping(from, { text: err.toString() }, { quoted: msg });
+			try { fs.unlinkSync(media); } catch {}
 		}
 	} else {
 		sendMessageWTyping(from, { text: `*Reply to image only*` }, { quoted: msg });

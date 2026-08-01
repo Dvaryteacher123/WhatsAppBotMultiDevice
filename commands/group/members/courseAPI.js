@@ -3,7 +3,7 @@ import axios from "axios";
 const handler = async (sock, msg, from, args, msgInfoObj) => {
 	const { sendMessageWTyping } = msgInfoObj;
 	var new_order = "date";
-	var new_page = args ? args[0] : 1;
+	var new_page = args[0] ? args[0] : 1;
 	var arg_free = 0;
 	var arg_keyword = "";
 	var arg_language = "";

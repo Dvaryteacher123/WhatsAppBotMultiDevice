@@ -1,5 +1,4 @@
 import startSock, { onNewSock } from "./connection.js";
-import { initBullQueue } from "./queue/bullQueue.js";
 import { startReminderScheduler } from "./utils/reminderScheduler.js";
 import getDate from "./utils/date.js";
 import { normalizeJID } from "./utils/lid.js";
@@ -14,18 +13,6 @@ const _warn  = console.warn.bind(console);
 const _error = console.error.bind(console);
 
 const _SESSION_SPAM = ['Closing session:', 'Removing old closed session:'];
-const _DEDUP_ONCE   = new Set(); // messages shown only once per run
-
-function _dedup(msg) {
-	const ONCE_PREFIXES = [
-		'IMPORTANT! Eviction policy',  // BullMQ Redis warning (prints 3x)
-	];
-	const key = ONCE_PREFIXES.find(p => msg.startsWith(p));
-	if (!key) return false;
-	if (_DEDUP_ONCE.has(key)) return true; // suppress
-	_DEDUP_ONCE.add(key);
-	return false; // allow first occurrence
-}
 
 // Suppress "Credentials saved to MongoDB" within 10s of startup (creds flush storm)
 let _startupTime = Date.now();
@@ -36,7 +23,7 @@ function _suppressStartupNoise(msg) {
 
 console.log   = (...a) => {
 	const s = String(a[0]);
-	if (_dedup(s) || _suppressStartupNoise(s)) return;
+	if (_suppressStartupNoise(s)) return;
 	_log(...a); pushLog('info', ...a);
 };
 console.info  = (...a) => {
@@ -254,7 +241,7 @@ wss.on("connection", (ws) => {
 			}
 			// Always use the live sock reference (fixes stale-sock bug for messages too)
 			const sock = app.locals.sock;
-			const jid = to + "@s.whatsapp.net";
+			const jid = await normalizeJID(sock, to);
 			await messageQueue.enqueue(jid, () => sock.sendMessage(jid, { text: message }), 0);
 			console.log("Message sent to", to, ":", message);
 			ws.send(JSON.stringify({ type: "success", success: "Message sent" }));
@@ -270,7 +257,6 @@ wss.on("connection", (ws) => {
 
 // ── Bot start ─────────────────────────────────────────────────────────────────
 async function startServer() {
-	await initBullQueue().catch((err) => console.error("BullMQ init failed, falling back to in-memory queue:", err.message));
 	await startSock("start");
 	startReminderScheduler();
 	// handleNewSock() is called by the onNewSock hook inside connection.js,
@@ -313,6 +299,14 @@ process.on("uncaughtException", function (err) {
 
 function gracefulShutdown(signal) {
 	console.log(`\n🔄 Received ${signal}. Starting graceful shutdown...`);
+	// End WA socket first so its ws "close" handler flushes pending session
+	// keys to Mongo — skip this and a crash mid-write leaves a stale session,
+	// which shows up next boot as Bad MAC until the ratchet resyncs.
+	try {
+		app.locals.sock?.end(undefined);
+	} catch (err) {
+		console.error("Error ending WA socket during shutdown:", err.message);
+	}
 	server.close(() => {
 		console.log("✅ HTTP server closed");
 		wss.clients.forEach((client) => client.close());

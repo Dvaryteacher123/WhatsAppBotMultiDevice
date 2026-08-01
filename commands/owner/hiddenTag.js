@@ -1,6 +1,6 @@
 const handler = async (sock, msg, from, args, msgInfoObj) => {
 	const { prefix, sendMessageWTyping, groupMetadata, type, content, extendedMessageOriginal } = msgInfoObj;
-	if (extendedMessageOriginal) {
+	if (extendedMessageOriginal?.quotedMessage) {
 		let temp =
 			extendedMessageOriginal?.quotedMessage?.extendedTextMessage?.text ||
 			extendedMessageOriginal?.quotedMessage?.conversation ||
@@ -19,7 +19,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 			tempMess[Object.keys(tempMess)[0]]["contextInfo"] = {
 				mentionedJid: [...groupMetadata.participants.map((e) => e.id)],
 			};
-			const tempCaption = tempMess[Object.keys(tempMess)[0]]["caption"];
+			const tempCaption = tempMess[Object.keys(tempMess)[0]]["caption"] ?? "";
 			tempMess[Object.keys(tempMess)[0]]["caption"] = tempCaption.includes(prefix + "hidetag")
 				? tempCaption.split(prefix + "hidetag")[1].trim()
 				: tempCaption;
@@ -40,7 +40,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 				contextInfo: { forwardingScore: 0, isForwarded: false },
 			});
 		} else {
-			let message = msg.message.conversation;
+			let message = msg.message.conversation ?? "";
 			message = message.includes(prefix + "hidetag") ? message.split(prefix + "hidetag")[1].trim() : message;
 			message = message ? message : "Hidden Tag by Eva";
 			sendMessageWTyping(from, {

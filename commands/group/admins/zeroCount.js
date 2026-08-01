@@ -40,6 +40,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 	}
 
 	group.findOne({ _id: from }).then((res) => {
+		if (!res) return sendMessageWTyping(from, { text: "❌ No data found in DB for this group." }, { quoted: msg });
 		group
 			.aggregate([
 				{ $match: { _id: from } },

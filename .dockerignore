@@ -25,7 +25,6 @@ pids
 temp/*
 !temp/.gitkeep
 backups/*
-.pnpm-store/*
 !backups/.gitkeep
 
 # ── Auth / session (generated at runtime) ─────────────────────────────────────

@@ -25,7 +25,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 };
 
 export default () => ({
-	cmd: ["test", "code", "mano"],
+	cmd: ["test", "code"],
 	desc: "Test your code",
 	usage: "test | code",
 	handler,

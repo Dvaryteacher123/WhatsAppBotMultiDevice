@@ -14,6 +14,7 @@ import { PolarArea, Bar } from 'react-chartjs-2'
 import { getStats, getAnalytics, getActivity, fmtUptime } from '../lib/api.js'
 import { useWebSocket } from '../hooks/useWebSocket.js'
 import { useWsEvent } from '../hooks/useWsEvent.js'
+import { useToast } from '../App.jsx'
 
 ChartJS.register(ArcElement, RadialLinearScale, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 
@@ -67,6 +68,7 @@ function ActivityDetail({ kind, detail }) {
 }
 
 export default function Dashboard() {
+  const toast = useToast()
   const [stats,     setStats]     = useState(null)
   const [analytics, setAnalytics] = useState(null)
   const [loading,   setLoading]   = useState(true)
@@ -76,7 +78,7 @@ export default function Dashboard() {
   useEffect(() => {
     Promise.all([getStats(), getAnalytics(), getActivity()])
       .then(([s, a, act]) => { setStats(s); setAnalytics(a); setActivity((act.activity || []).slice().reverse()) })
-      .catch(() => {})
+      .catch(() => toast('Failed to load dashboard data', false))
       .finally(() => setLoading(false))
   }, [])
 

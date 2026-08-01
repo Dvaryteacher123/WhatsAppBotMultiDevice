@@ -94,17 +94,19 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 			strokeWeight: 1,
 		};
 
-		memeMaker(options).then(async () => {
-			sock.sendMessage(from, { image: await fs.promises.readFile(MemePath) }, { quoted: msg }).then(() => {
-				try {
-					fs.unlinkSync(MemePath);
-					fs.unlinkSync(media);
-				} catch (error) {
-					console.error(error);
-				}
-			});
+		try {
+			await memeMaker(options);
+			await sendMessageWTyping(from, { image: await fs.promises.readFile(MemePath) }, { quoted: msg });
 			console.log("Sent");
-		});
+		} catch (error) {
+			console.error(error);
+			sendMessageWTyping(from, { text: `*Failed to create meme*` }, { quoted: msg });
+		} finally {
+			try {
+				fs.unlinkSync(MemePath);
+				fs.unlinkSync(media);
+			} catch {}
+		}
 	} else {
 		sendMessageWTyping(from, { text: `*Reply to Image Only*` }, { quoted: msg });
 	}

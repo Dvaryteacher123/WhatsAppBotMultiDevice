@@ -46,6 +46,9 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 	};
 
 	inshorts.get(options, function (result) {
+		if (!Array.isArray(result) || result.length === 0) {
+			return sendMessageWTyping(from, { text: `❌ Failed to fetch news. Try again.` }, { quoted: msg });
+		}
 		const category = newsType === "" ? "Top Stories" : newsType.charAt(0).toUpperCase() + newsType.slice(1);
 		let message = `📰 *${category} News*\n${readMore}`;
 		result.forEach((news, i) => {

@@ -8,6 +8,7 @@ import passport from "passport";
 import { normalizeJID } from "../utils/lid.js";
 import messageQueue from "../queue/messageQueue.js";
 import { pushActivity, getLogs, getActivity, cmdUsage } from "../notify/adminEvents.js";
+import { getCookiesContent, saveCookies } from "../functions/cookieManager.js";
 
 const router = Router();
 
@@ -266,10 +267,8 @@ router.post("/api/admin/broadcast", requireAdmin, async (req, res) => {
 		let sent = 0, failed = 0;
 		for (const jid of jids) {
 			try {
-				await sock.sendMessage(jid, { text: message.trim() });
+				await messageQueue.enqueue(jid, () => sock.sendMessage(jid, { text: message.trim() }), 2);
 				sent++;
-				// Small delay to avoid rate limiting
-				await new Promise(r => setTimeout(r, 400));
 			} catch (_) {
 				failed++;
 			}
@@ -512,6 +511,27 @@ router.get("/api/admin/activity", requireAdmin, (_req, res) => {
 // ── API: Command usage stats ───────────────────────────────────────────────────
 router.get("/api/admin/command-stats", requireAdmin, (_req, res) => {
 	res.json({ stats: Object.fromEntries(cmdUsage) });
+});
+
+// ── API: YT Cookies ────────────────────────────────────────────────────────────
+router.get("/api/admin/yt-cookies", requireAdmin, async (req, res) => {
+	try {
+		const content = await getCookiesContent();
+		res.json({ content: content || "" });
+	} catch (err) {
+		res.status(500).json({ error: err.message });
+	}
+});
+
+router.post("/api/admin/yt-cookies", requireAdmin, async (req, res) => {
+	const { content } = req.body;
+	if (typeof content !== "string") return res.status(400).json({ error: "content required" });
+	try {
+		await saveCookies(content);
+		res.json({ ok: true });
+	} catch (err) {
+		res.status(500).json({ error: err.message });
+	}
 });
 
 // ── API: Direct message ────────────────────────────────────────────────────────

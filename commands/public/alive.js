@@ -1,7 +1,6 @@
 import mdClient from "../../db/client.js";
 import { isRedisEnabled } from "../../cache/redisCache.js";
 import getRedisClient from "../../cache/redisClient.js";
-import { isBullReady } from "../../queue/bullQueue.js";
 
 async function checkMongo() {
 	try {
@@ -43,8 +42,6 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 		isRedisEnabled ? checkRedis() : Promise.resolve(null),
 	]);
 
-	const bullOk = isBullReady();
-
 	const st = (ok) => (ok === null ? "⚪" : ok ? "🟢" : "🔴");
 
 	const response =
@@ -55,8 +52,7 @@ const handler = async (sock, msg, from, args, msgInfoObj) => {
 		`*🧠 RAM:* ${usedMB} MB\n\n` +
 		`*── Connections ──*\n` +
 		`${st(mongoOk)} *MongoDB*\n` +
-		`${st(redisResult)} *Redis*${redisResult === null ? " _(disabled)_" : ""}\n` +
-		`${st(bullOk)} *BullMQ Queue*\n\n` +
+		`${st(redisResult)} *Redis*${redisResult === null ? " _(disabled)_" : ""}\n\n` +
 		`*🛠️ Node.js:* ${process.version}`;
 
 	return sendMessageWTyping(from, { text: response }, { quoted: msg });
