@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>
+    <%= typeof title !== 'undefined'
+      ? title
+      : 'WhatsApp Multi-Session Bot' %>
+  </title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+  <style>
+    body {
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, .20), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(124, 58, 237, .18), transparent 35%),
+        #020617;
+      min-height: 100vh;
+    }
+
+    .glass {
+      background: rgba(15, 23, 42, .72);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(148, 163, 184, .12);
+    }
+
+    .glow {
+      box-shadow:
+        0 0 30px rgba(59, 130, 246, .12),
+        0 20px 60px rgba(0, 0, 0, .35);
+    }
+
+    .loader {
+      width: 22px;
+      height: 22px;
+      border: 3px solid rgba(255,255,255,.25);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #qrcode img {
+      margin: auto;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+
+<body class="text-white">
+
+  <!-- HEADER -->
+  <header class="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-xl">
+    <div class="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
+
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/20">
+          <span class="text-xl">🤖</span>
+        </div>
+
+        <div>
+          <h1 class="font-bold text-lg">
+            WhatsApp Bot
+          </h1>
+
+          <p class="text-xs text-slate-400">
+            Multi-Session Dashboard
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span
+          id="connectionDot"
+          class="w-2.5 h-2.5 rounded-full bg-slate-500">
+        </span>
+
+        <span
+          id="connectionText"
+          class="text-xs text-slate-400">
+          Disconnected
+        </span>
+      </div>
+
+    </div>
+  </header>
+
+
+  <!-- MAIN -->
+  <main class="max-w-6xl mx-auto px-5 py-10">
+
+    <!-- HERO -->
+    <section class="text-center mb-10">
+
+      <div
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-full
+        bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs mb-5">
+
+        <span>⚡</span>
+        <span>Multi-Session WhatsApp System</span>
+
+      </div>
+
+      <h2 class="text-4xl md:text-5xl font-black tracking-tight">
+        Connect Your
+        <span class="text-blue-500">
+          WhatsApp
+        </span>
+      </h2>
+
+      <p class="text-slate-400 max-w-xl mx-auto mt-4">
+        Enter your WhatsApp number and generate a pairing code
+        to connect your session.
+      </p>
+
+    </section>
+
+
+    <!-- TABS -->
+    <div class="flex justify-center mb-6">
+
+      <div class="glass rounded-2xl p-1 flex gap-1">
+
+        <button
+          id="pairTab"
+          onclick="setTab('pair')"
+          class="px-6 py-2.5 rounded-xl bg-blue-600 text-sm font-semibold">
+          🔗 Pair
+        </button>
+
+        <button
+          id="qrTab"
+          onclick="setTab('qr')"
+          class="px-6 py-2.5 rounded-xl text-slate-400 text-sm font-semibold">
+          📱 QR / Status
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- PAIR PANEL -->
+    <section
+      id="pairPanel"
+      class="max-w-xl mx-auto">
+
+      <div class="glass glow rounded-3xl p-6 md:p-8">
+
+        <div class="mb-7">
+
+          <h3 class="text-xl font-bold">
+            Pair New WhatsApp
+          </h3>
+
+          <p class="text-sm text-slate-400 mt-1">
+            Use a separate session ID for each WhatsApp account.
+          </p>
+
+        </div>
+
+
+        <!-- SESSION ID -->
+        <div class="mb-5">
+
+          <label class="block text-sm font-medium text-slate-300 mb-2">
+            Session ID
+          </label>
+
+          <input
+            id="sessionId"
+            type="text"
+            value="default"
+            placeholder="Example: wa_255718278672"
+            class="w-full px-4 py-3.5 rounded-xl bg-slate-900/80
+                   border border-slate-700 focus:border-blue-500
+                   focus:ring-2 focus:ring-blue-500/20
+                   outline-none transition text-sm">
+
+          <p class="text-xs text-slate-500 mt-2">
+            If you leave <b>default</b>, the system can create a session
+            using your WhatsApp number.
+          </p>
+
+        </div>
+
+
+        <!-- PHONE -->
+        <div class="mb-5">
+
+          <label class="block text-sm font-medium text-slate-300 mb-2">
+            WhatsApp Phone Number
+          </label>
+
+          <div class="flex">
+
+            <div
+              class="px-4 flex items-center bg-slate-800
+                     border border-r-0 border-slate-700
+                     rounded-l-xl text-slate-400 text-sm">
+              +
+            </div>
+
+            <input
+              id="phoneNumber"
+              type="tel"
+              inputmode="numeric"
+              placeholder="255718278672"
+              class="w-full px-4 py-3.5 rounded-r-xl bg-slate-900/80
+                     border border-slate-700 focus:border-blue-500
+                     focus:ring-2 focus:ring-blue-500/20
+                     outline-none transition text-sm">
+          </div>
+
+          <p class="text-xs text-slate-500 mt-2">
+            Enter country code. Example:
+            <span class="text-slate-300">255718278672</span>
+          </p>
+
+        </div>
+
+
+        <!-- BUTTON -->
+        <button
+          id="pairButton"
+          onclick="startPairing()"
+          class="w-full py-3.5 rounded-xl bg-blue-600
+                 hover:bg-blue-500 active:bg-blue-700
+                 transition font-bold
+                 shadow-lg shadow-blue-600/20">
+
+          <span id="pairButtonText">
+            Get Pairing Code
+          </span>
+
+          <span
+            id="pairLoader"
+            class="loader hidden mx-auto">
+          </span>
+
+        </button>
+
+
+        <!-- RESULT -->
+        <div
+          id="pairResult"
+          class="hidden mt-6">
+
+          <div
+            class="rounded-2xl border border-emerald-500/20
+                   bg-emerald-500/10 p-5">
+
+            <div class="flex items-center gap-3 mb-4">
+
+              <div
+                class="w-10 h-10 rounded-xl bg-emerald-500/20
+                       flex items-center justify-center">
+                ✓
+              </div>
+
+              <div>
+                <h4 class="font-bold text-emerald-300">
+                  Pairing Code Ready
+                </h4>
+
+                <p class="text-xs text-slate-400">
+                  Enter this code in WhatsApp.
+                </p>
+              </div>
+
+            </div>
+
+
+            <div
+              class="flex items-center gap-3">
+
+              <div
+                id="pairCode"
+                class="flex-1 text-center text-2xl
+                       font-black tracking-[0.35em]
+                       bg-slate-950/70 rounded-xl py-4
+                       border border-slate-700">
+                --------
+              </div>
+
+              <button
+                onclick="copyPairCode()"
+                class="px-4 py-4 rounded-xl bg-slate-800
+                       hover:bg-slate-700 transition">
+                📋
+              </button>
+
+            </div>
+
+
+            <div
+              class="mt-5 p-4 rounded-xl bg-slate-950/40">
+
+              <p class="text-sm font-semibold mb-2">
+                How to connect
+              </p>
+
+              <ol class="text-xs text-slate-400 space-y-2">
+                <li>1. Open WhatsApp on your phone.</li>
+                <li>2. Go to Settings → Linked Devices.</li>
+                <li>3. Select Link a Device.</li>
+                <li>4. Choose Link with phone number instead.</li>
+                <li>5. Enter the pairing code above.</li>
+              </ol>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- ERROR -->
+        <div
+          id="errorBox"
+          class="hidden mt-5 rounded-xl
+                 border border-red-500/20
+                 bg-red-500/10 p-4">
+
+          <p
+            id="errorText"
+            class="text-sm text-red-300">
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- QR / STATUS PANEL -->
+    <section
+      id="qrPanel"
+      class="hidden max-w-xl mx-auto">
+
+      <div class="glass glow rounded-3xl p-6 md:p-8">
+
+        <div class="mb-7">
+
+          <h3 class="text-xl font-bold">
+            Session Status
+          </h3>
+
+          <p class="text-sm text-slate-400 mt-1">
+            Monitor your WhatsApp session connection.
+          </p>
+
+        </div>
+
+
+        <!-- SESSION -->
+        <div class="mb-5">
+
+          <label class="block text-sm font-medium text-slate-300 mb-2">
+            Session ID
+          </label>
+
+          <input
+            id="statusSessionId"
+            type="text"
+            value="default"
+            placeholder="Session ID"
+            class="w-full px-4 py-3.5 rounded-xl bg-slate-900/80
+                   border border-slate-700 focus:border-blue-500
+                   outline-none text-sm">
+
+        </div>
+
+
+        <!-- STATUS -->
+        <div
+          id="statusCard"
+          class="rounded-2xl bg-slate-900/60
+                 border border-slate-800 p-5">
+
+          <div class="flex items-center gap-4">
+
+            <div
+              id="statusIcon"
+              class="w-12 h-12 rounded-2xl
+                     bg-slate-800 flex items-center justify-center">
+              ⏳
+            </div>
+
+            <div>
+
+              <h4
+                id="statusTitle"
+                class="font-bold">
+                Waiting
+              </h4>
+
+              <p
+                id="statusMessage"
+                class="text-sm text-slate-400">
+                Waiting for session status...
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- QR -->
+        <div
+          id="qrContainer"
+          class="hidden mt-6">
+
+          <div
+            class="bg-white rounded-2xl p-5 w-fit mx-auto">
+
+            <div id="qrcode"></div>
+
+          </div>
+
+          <p class="text-center text-xs text-slate-400 mt-4">
+            Scan this QR code with WhatsApp.
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- INFO CARDS -->
+    <section class="grid md:grid-cols-3 gap-4 mt-10">
+
+      <div class="glass rounded-2xl p-5">
+
+        <div
+          class="w-10 h-10 rounded-xl bg-blue-500/10
+                 flex items-center justify-center mb-4">
+          🔐
+        </div>
+
+        <h3 class="font-bold">
+          Secure Sessions
+        </h3>
+
+        <p class="text-sm text-slate-400 mt-2">
+          Each WhatsApp account uses its own isolated session.
+        </p>
+
+      </div>
+
+
+      <div class="glass rounded-2xl p-5">
+
+        <div
+          class="w-10 h-10 rounded-xl bg-purple-500/10
+                 flex items-center justify-center mb-4">
+          👥
+        </div>
+
+        <h3 class="font-bold">
+          Multi User
+        </h3>
+
+        <p class="text-sm text-slate-400 mt-2">
+          Multiple WhatsApp numbers can connect to the same bot server.
+        </p>
+
+      </div>
+
+
+      <div class="glass rounded-2xl p-5">
+
+        <div
+          class="w-10 h-10 rounded-xl bg-emerald-500/10
+                 flex items-center justify-center mb-4">
+          ⚡
+        </div>
+
+        <h3 class="font-bold">
+          Fast Pairing
+        </h3>
+
+        <p class="text-sm text-slate-400 mt-2">
+          Generate a WhatsApp pairing code directly from the dashboard.
+        </p>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-800/80 mt-10">
+
+    <div
+      class="max-w-6xl mx-auto px-5 py-6
+             text-center text-xs text-slate-500">
+
+      WhatsApp Multi-Session Bot
+      <span class="mx-1">•</span>
+      Powered by Baileys
+
+    </div>
+
+  </footer>
+
+
+<script>
+
+  let socket = null;
+  let currentTab = "pair";
+  let currentSession = "default";
+
+
+  /* =========================
+     ELEMENTS
+  ========================= */
+
+  const pairButton = document.getElementById("pairButton");
+  const pairButtonText = document.getElementById("pairButtonText");
+  const pairLoader = document.getElementById("pairLoader");
+
+  const pairResult = document.getElementById("pairResult");
+  const pairCode = document.getElementById("pairCode");
+
+  const errorBox = document.getElementById("errorBox");
+  const errorText = document.getElementById("errorText");
+
+  const statusSessionId =
+    document.getElementById("statusSessionId");
+
+  const connectionDot =
+    document.getElementById("connectionDot");
+
+  const connectionText =
+    document.getElementById("connectionText");
+
+  const statusIcon =
+    document.getElementById("statusIcon");
+
+  const statusTitle =
+    document.getElementById("statusTitle");
+
+  const statusMessage =
+    document.getElementById("statusMessage");
+
+  const qrContainer =
+    document.getElementById("qrContainer");
+
+  const qrcode =
+    document.getElementById("qrcode");
+
+
+  /* =========================
+     TAB
+  ========================= */
+
+  function setTab(tab) {
+
+    currentTab = tab;
+
+    const pairPanel =
+      document.getElementById("pairPanel");
+
+    const qrPanel =
+      document.getElementById("qrPanel");
+
+    const pairTab =
+      document.getElementById("pairTab");
+
+    const qrTab =
+      document.getElementById("qrTab");
+
+
+    if (tab === "pair") {
+
+      pairPanel.classList.remove("hidden");
+      qrPanel.classList.add("hidden");
+
+      pairTab.classList.add(
+        "bg-blue-600",
+        "text-white"
+      );
+
+      pairTab.classList.remove(
+        "text-slate-400"
+      );
+
+      qrTab.classList.remove(
+        "bg-blue-600",
+        "text-white"
+      );
+
+      qrTab.classList.add(
+        "text-slate-400"
+      );
+
+    } else {
+
+      pairPanel.classList.add("hidden");
+      qrPanel.classList.remove("hidden");
+
+      qrTab.classList.add(
+        "bg-blue-600",
+        "text-white"
+      );
+
+      qrTab.classList.remove(
+        "text-slate-400"
+      );
+
+      pairTab.classList.remove(
+        "bg-blue-600",
+        "text-white"
+      );
+
+      pairTab.classList.add(
+        "text-slate-400"
+      );
+
+      connectSocket();
+
+    }
+
+  }
+
+
+  /* =========================
+     ERROR
+  ========================= */
+
+  function showError(message) {
+
+    errorText.textContent =
+      message || "Something went wrong.";
+
+    errorBox.classList.remove("hidden");
+
+  }
+
+
+  function hideError() {
+
+    errorBox.classList.add("hidden");
+
+  }
+
+
+  /* =========================
+     LOADING
+  ========================= */
+
+  function setLoading(loading) {
+
+    pairButton.disabled = loading;
+
+    if (loading) {
+
+      pairButtonText.classList.add("hidden");
+      pairLoader.classList.remove("hidden");
+
+    } else {
+
+      pairButtonText.classList.remove("hidden");
+      pairLoader.classList.add("hidden");
+
+    }
+
+  }
+
+
+  /* =========================
+     SESSION
+  ========================= */
+
+  function cleanPhone(phone) {
+
+    return String(phone || "")
+      .replace(/\D/g, "");
+
+  }
+
+
+  function cleanSession(session) {
+
+    return String(session || "")
+      .trim()
+      .replace(/[^a-zA-Z0-9_-]/g, "_")
+      .slice(0, 64);
+
+  }
+
+
+  /* =========================
+     PAIR
+  ========================= */
+
+  async function startPairing() {
+
+    hideError();
+
+    pairResult.classList.add("hidden");
+
+    let phone =
+      cleanPhone(
+        document.getElementById("phoneNumber").value
+      );
+
+    let sessionId =
+      cleanSession(
+        document.getElementById("sessionId").value
+      );
+
+
+    if (!phone) {
+
+      showError(
+        "Please enter your WhatsApp phone number."
+      );
+
+      return;
+    }
+
+
+    if (phone.length < 8) {
+
+      showError(
+        "Please enter a valid WhatsApp phone number."
+      );
+
+      return;
+    }
+
+
+    /*
+      If user leaves session as "default",
+      automatically create a unique session.
+    */
+
+    if (!sessionId || sessionId === "default") {
+
+      sessionId = `wa_${phone}`;
+
+      document.getElementById("sessionId").value =
+        sessionId;
+
+    }
+
+
+    currentSession = sessionId;
+
+    statusSessionId.value =
+      sessionId;
+
+
+    setLoading(true);
+
+
+    try {
+
+      const response =
+        await fetch("/api/pair", {
+
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json"
+          },
+
+          body: JSON.stringify({
+
+            phoneNumber: phone,
+
+            sessionId: sessionId
+
+          })
+
+        });
+
+
+      let data = {};
+
+      try {
+
+        data = await response.json();
+
+      } catch (_) {
+
+        data = {};
+
+      }
+
+
+      if (!response.ok || !data.success) {
+
+        throw new Error(
+          data.message ||
+          data.error ||
+          "Failed to generate pairing code."
+        );
+
+      }
+
+
+      /*
+        Server may return the final session ID.
+      */
+
+      if (data.sessionId) {
+
+        currentSession =
+          data.sessionId;
+
+        document.getElementById(
+          "sessionId"
+        ).value = data.sessionId;
+
+        statusSessionId.value =
+          data.sessionId;
+
+      }
+
+
+      const code =
+        data.code ||
+        data.pairingCode ||
+        data.pairing_code;
+
+
+      if (!code) {
+
+        throw new Error(
+          "Server did not return a pairing code."
+        );
+
+      }
+
+
+      pairCode.textContent =
+        String(code).toUpperCase();
+
+
+      pairResult.classList.remove(
+        "hidden"
+      );
+
+
+      setStatus(
+        "connecting",
+        "Pairing code generated",
+        "Open WhatsApp and enter the code."
+      );
+
+
+      connectSocket();
+
+
+    } catch (error) {
+
+      console.error(
+        "Pairing error:",
+        error
+      );
+
+      showError(
+        error.message ||
+        "Unable to generate pairing code."
+      );
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
+  }
+
+
+  /* =========================
+     COPY CODE
+  ========================= */
+
+  async function copyPairCode() {
+
+    const code =
+      pairCode.textContent.trim();
+
+    if (!code || code === "--------") {
+      return;
+    }
+
+
+    try {
+
+      await navigator.clipboard.writeText(code);
+
+      const old =
+        pairCode.textContent;
+
+      pairCode.textContent =
+        "COPIED!";
+
+      setTimeout(() => {
+
+        pairCode.textContent =
+          old;
+
+      }, 1200);
+
+    } catch (error) {
+
+      console.error(
+        "Copy error:",
+        error
+      );
+
+    }
+
+  }
+
+
+  /* =========================
+     STATUS
+  ========================= */
+
+  function setStatus(
+    state,
+    title,
+    message
+  ) {
+
+    statusTitle.textContent =
+      title || "Status";
+
+    statusMessage.textContent =
+      message || "";
+
+
+    if (state === "connected") {
+
+      statusIcon.textContent =
+        "✓";
+
+      statusIcon.className =
+        "w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center";
+
+      connectionDot.className =
+        "w-2.5 h-2.5 rounded-full bg-emerald-500";
+
+      connectionText.textContent =
+        "Connected";
+
+      connectionText.className =
+        "text-xs text-emerald-400";
+
+      qrContainer.classList.add(
+        "hidden"
+      );
+
+
+    } else if (state === "connecting") {
+
+      statusIcon.textContent =
+        "⏳";
+
+      statusIcon.className =
+        "w-12 h-12 rounded-2xl bg-yellow-500/20 text-yellow-400 flex items-center justify-center";
+
+      connectionDot.className =
+        "w-2.5 h-2.5 rounded-full bg-yellow-500";
+
+      connectionText.textContent =
+        "Connecting";
+
+      connectionText.className =
+        "text-xs text-yellow-400";
+
+
+    } else if (state === "qr") {
+
+      statusIcon.textContent =
+        "📱";
+
+      statusIcon.className =
+        "w-12 h-12 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center";
+
+      connectionDot.className =
+        "w-2.5 h-2.5 rounded-full bg-blue-500";
+
+      connectionText.textContent =
+        "Waiting";
+
+      connectionText.className =
+        "text-xs text-blue-400";
+
+      qrContainer.classList.remove(
+        "hidden"
+      );
+
+
+    } else if (state === "error") {
+
+      statusIcon.textContent =
+        "✕";
+
+      statusIcon.className =
+        "w-12 h-12 rounded-2xl bg-red-500/20 text-red-400 flex items-center justify-center";
+
+      connectionDot.className =
+        "w-2.5 h-2.5 rounded-full bg-red-500";
+
+      connectionText.textContent =
+        "Error";
+
+      connectionText.className =
+        "text-xs text-red-400";
+
+
+    } else {
+
+      statusIcon.textContent =
+        "⏳";
+
+      statusIcon.className =
+        "w-12 h-12 rounded-2xl bg-slate-800 text-slate-400 flex items-center justify-center";
+
+      connectionDot.className =
+        "w-2.5 h-2.5 rounded-full bg-slate-500";
+
+      connectionText.textContent =
+        "Disconnected";
+
+      connectionText.className =
+        "text-xs text-slate-400";
+
+    }
+
+  }
+
+
+  /* =========================
+     QR CODE
+  ========================= */
+
+  function showQRCode(value) {
+
+    if (!value) {
+      return;
+    }
+
+
+    qrcode.innerHTML = "";
+
+
+    try {
+
+      new QRCode(qrcode, {
+
+        text: value,
+
+        width: 220,
+
+        height: 220,
+
+        colorDark: "#000000",
+
+        colorLight: "#ffffff",
+
+        correctLevel:
+          QRCode.CorrectLevel.M
+
+      });
+
+
+      qrContainer.classList.remove(
+        "hidden"
+      );
+
+    } catch (error) {
+
+      console.error(
+        "QR error:",
+        error
+      );
+
+    }
+
+  }
+
+
+  /* =========================
+     WEBSOCKET
+  ========================= */
+
+  function getWebSocketURL() {
+
+    const protocol =
+      location.protocol === "https:"
+        ? "wss:"
+        : "ws:";
+
+    return `${protocol}//${location.host}/ws`;
+
+  }
+
+
+  function connectSocket() {
+
+    const session =
+      cleanSession(
+        statusSessionId.value ||
+        document.getElementById("sessionId").value ||
+        currentSession ||
+        "default"
+      );
+
+
+    if (!session) {
+      return;
+    }
+
+
+    currentSession =
+      session;
+
+
+    if (
+      socket &&
+      socket.readyState === WebSocket.OPEN
+    ) {
+
+      socket.send(
+        JSON.stringify({
+
+          type: "subscribe",
+
+          sessionId: session
+
+        })
+      );
+
+      return;
+    }
+
+
+    if (
+      socket &&
+      socket.readyState === WebSocket.CONNECTING
+    ) {
+
+      return;
+
+    }
+
+
+    try {
+
+      socket =
+        new WebSocket(
+          getWebSocketURL()
+        );
+
+
+      socket.addEventListener(
+        "open",
+        () => {
+
+          console.log(
+            "WebSocket connected"
+          );
+
+
+          socket.send(
+            JSON.stringify({
+
+              type: "subscribe",
+
+              sessionId: currentSession
+
+            })
+          );
+
+
+          setStatus(
+            "connecting",
+            "Connected to dashboard",
+            `Monitoring session: ${currentSession}`
+          );
+
+        }
+      );
+
+
+      socket.addEventListener(
+        "message",
+        (event) => {
+
+          try {
+
+            const data =
+              JSON.parse(
+                event.data
+              );
+
+            handleSocketMessage(
+              data
+            );
+
+          } catch (error) {
+
+            console.error(
+              "Invalid WebSocket message:",
+              event.data
+            );
+
+          }
+
+        }
+      );
+
+
+      socket.addEventListener(
+        "close",
+        () => {
+
+          console.log(
+            "WebSocket closed"
+          );
+
+
+          if (currentTab === "qr") {
+
+            setStatus(
+              "disconnected",
+              "Dashboard disconnected",
+              "Trying to reconnect..."
+            );
+
+          }
+
+
+          setTimeout(() => {
+
+            if (
+              currentTab === "qr"
+            ) {
+
+              connectSocket();
+
+            }
+
+          }, 3000);
+
+        }
+      );
+
+
+      socket.addEventListener(
+        "error",
+        (error) => {
+
+          console.error(
+            "WebSocket error:",
+            error
+          );
+
+        }
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "WebSocket connection failed:",
+        error
+      );
+
+    }
+
+  }
+
+
+  /* =========================
+     SOCKET MESSAGE
+  ========================= */
+
+  function handleSocketMessage(data) {
+
+    console.log(
+      "WS:",
+      data
+    );
+
+
+    if (
+      data.sessionId &&
+      data.sessionId !== currentSession
+    ) {
+
+      return;
+
+    }
+
+
+    switch (data.type) {
+
+      case "qr":
+
+        showQRCode(
+          data.qr
+        );
+
+        setStatus(
+          "qr",
+          "Scan QR Code",
+          "Scan the QR code using WhatsApp."
+        );
+
+        break;
+
+
+      case "connected":
+
+      case "open":
+
+      case "ready":
+
+      case "connection":
+
+        setStatus(
+          "connected",
+          "WhatsApp Connected",
+          "Your WhatsApp session is online."
+        );
+
+        break;
+
+
+      case "pair-success":
+
+      case "pairing-success":
+
+        setStatus(
+          "connected",
+          "Pairing Successful",
+          "Your WhatsApp account has been connected."
+        );
+
+        break;
+
+
+      case "connecting":
+
+        setStatus(
+          "connecting",
+          "Connecting...",
+          data.message ||
+          "Connecting to WhatsApp..."
+        );
+
+        break;
+
+
+      case "disconnected":
+
+      case "close":
+
+      case "offline":
+
+        setStatus(
+          "disconnected",
+          "Disconnected",
+          data.message ||
+          "WhatsApp session disconnected."
+        );
+
+        break;
+
+
+      case "error":
+
+        setStatus(
+          "error",
+          "Connection Error",
+          data.message ||
+          data.error ||
+          "An error occurred."
+        );
+
+        break;
+
+
+      case "log":
+
+        console.log(
+          `[${data.sessionId || currentSession}]`,
+          data.message || data.log
+        );
+
+        break;
+
+
+      default:
+
+        if (data.status === "connected") {
+
+          setStatus(
+            "connected",
+            "WhatsApp Connected",
+            "Your WhatsApp session is online."
+          );
+
+        }
+
+        break;
+
+    }
+
+  }
+
+
+  /* =========================
+     SESSION INPUT SYNC
+  ========================= */
+
+  statusSessionId.addEventListener(
+    "change",
+    () => {
+
+      const session =
+        cleanSession(
+          statusSessionId.value
+        );
+
+      if (!session) {
+        return;
+      }
+
+
+      currentSession =
+        session;
+
+
+      if (
+        socket &&
+        socket.readyState === WebSocket.OPEN
+      ) {
+
+        socket.send(
+          JSON.stringify({
+
+            type: "subscribe",
+
+            sessionId: session
+
+          })
+        );
+
+      }
+
+    }
+  );
+
+
+  document
+    .getElementById("sessionId")
+    .addEventListener(
+      "input",
+      (event) => {
+
+        const session =
+          cleanSession(
+            event.target.value
+          );
+
+
+        if (session) {
+
+          statusSessionId.value =
+            session;
+
+          currentSession =
+            session;
+
+        }
+
+      }
+    );
+
+
+  /* =========================
+     PHONE ENTER
+  ========================= */
+
+  document
+    .getElementById("phoneNumber")
+    .addEventListener(
+      "keydown",
+      (event) => {
+
+        if (
+          event.key === "Enter"
+        ) {
+
+          startPairing();
+
+        }
+
+      }
+    );
+
+
+  /* =========================
+     INIT
+  ========================= */
+
+  setStatus(
+    "disconnected",
+    "Waiting",
+    "Enter your WhatsApp number to begin."
+  );
+
+</script>
+
+</body>
+</html>
