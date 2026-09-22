@@ -1,0 +1,61 @@
+import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+import session from "express-session";
+import passport from "passport";
+import dotenv from "dotenv";
+
+// Pakia mazingira ya siri kutoka .env
+dotenv.config();
+
+// Kupata __dirname kwenye ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+
+// Usanidi wa Views na Template Engine ya EJS
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "ejs");
+
+// Middleware ya kusoma data za JSON na URL-encoded
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Folda ya mafaili ya nje (public assets kama CSS, JS, picha)
+app.use(express.static(path.join(__dirname, "public")));
+
+// Usanidi wa Session
+app.use(
+	session({
+		secret: process.env.SESSION_SECRET || "dvary_secret_key",
+		resave: false,
+		saveUninitialized: false,
+		cookie: { secure: false }, // Weka true kama unatumia HTTPS kamili kwenye production, au acha false kwa ajili ya Render
+	})
+);
+
+// Passport initialization
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Route kuu ya kufungua ukurasa wa mwanzo (Pairing Form)
+app.get("/", (req, res) => {
+	try {
+		res.render("index");
+	} catch (err) {
+		console.error("❌ Hitilafu ya rendering index.ejs:", err.message);
+		res.status(500).send("Imeshindikana kufungua ukurasa.");
+	}
+});
+
+// Kuunganisha Admin Routes zako kutoka kwenye folda ya routes
+import adminRouter from "./routes/admin.js";
+app.use("/", adminRouter);
+
+// Kusikiliza kwenye Port iliyotolewa na Render au 3000 kwa ajili ya Localhost
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+	console.log(`🚀 Seva inafanya kazi kwenye Port: ${PORT}`);
+});
+
